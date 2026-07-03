@@ -4,7 +4,7 @@
 // การป้องกันจริงอยู่ที่ session token หลัง login ทุกครั้ง (ดู backend/Auth.js)
 export const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbzy-kNNVyu-wbdAw0dG0hUxSK7l_cpCkkLwcNHBIE3jRpqbra8WNvrTEvmZzmx_iIZyOg/exec', // เช่น 'https://script.google.com/macros/s/AKfycb.../exec' — ปล่อยว่าง = โหมดสาธิต (DEMO MODE)
-  API_KEY: '',
+  API_KEY: 'AIzaSyDI8lRtoQf4UIDp9TNBXzpvY2u-ymffeqc',
   APP_NAME: 'ระบบเยี่ยมบ้าน INHOMESS',
   ORG_NAME: 'โรงพยาบาล/รพ.สต.'
 };
