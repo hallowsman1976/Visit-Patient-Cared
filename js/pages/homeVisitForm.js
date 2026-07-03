@@ -323,7 +323,13 @@ function fieldHtml(f, value) {
 }
 
 function plainOptions(options, current) {
-  return (options || []).map(o => `<option value="${escapeHtml(o)}" ${String(current) === String(o) ? 'selected' : ''}>${escapeHtml(o)}${typeof o === 'number' ? ' คะแนน' : ''}</option>`).join('');
+  return (options || []).map(o => {
+    // รองรับทั้ง option แบบค่าเดี่ยว (เช่น 0/5/10 หรือสตริงของหมวด INHOMESS) และแบบ { value, label } ที่มีคำอธิบาย
+    const isObj = o && typeof o === 'object';
+    const val = isObj ? o.value : o;
+    const text = isObj ? o.label : (String(o) + (typeof o === 'number' ? ' คะแนน' : ''));
+    return `<option value="${escapeHtml(val)}" ${String(current) === String(val) ? 'selected' : ''}>${escapeHtml(text)}</option>`;
+  }).join('');
 }
 
 function selectOptions(group, current) {

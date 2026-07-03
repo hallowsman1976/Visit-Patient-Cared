@@ -3,17 +3,58 @@
 // type: text | number | textarea | boolean | select | date
 // options: ['low','medium','high'] (ใช้ตรงถ้าไม่ผูก lookupGroup) หรือระบุ lookupGroup เพื่อดึงจาก getLookups
 
+// คะแนน ADL ตามเกณฑ์ Barthel Index (ฉบับไทย) — แต่ละ option มีคำอธิบายกำกับความหมายของคะแนน
 export const ADL_FIELDS = [
-  { key: 'feeding', label: 'กินอาหาร', type: 'select', options: [0, 5, 10] },
-  { key: 'grooming', label: 'ล้างหน้า/หวีผม/แปรงฟัน', type: 'select', options: [0, 5] },
-  { key: 'transfer', label: 'ลุกนั่ง/เคลื่อนย้าย', type: 'select', options: [0, 5, 10, 15] },
-  { key: 'toilet_use', label: 'ใช้ห้องน้ำ', type: 'select', options: [0, 5, 10] },
-  { key: 'mobility', label: 'เดิน/เคลื่อนที่', type: 'select', options: [0, 5, 10, 15] },
-  { key: 'dressing', label: 'แต่งตัว', type: 'select', options: [0, 5, 10] },
-  { key: 'stairs', label: 'ขึ้นลงบันได', type: 'select', options: [0, 5, 10] },
-  { key: 'bathing', label: 'อาบน้ำ', type: 'select', options: [0, 5] },
-  { key: 'bowels', label: 'กลั้นอุจจาระ', type: 'select', options: [0, 5, 10] },
-  { key: 'bladder', label: 'กลั้นปัสสาวะ', type: 'select', options: [0, 5, 10] },
+  { key: 'feeding', label: 'กินอาหาร', type: 'select', options: [
+    { value: 0, label: '0 – ตักอาหารเข้าปากเองไม่ได้ ต้องมีคนป้อน' },
+    { value: 5, label: '5 – ตักเองได้ แต่ต้องมีคนช่วยเตรียม/หั่นให้' },
+    { value: 10, label: '10 – ตักและกินเองได้ตามปกติ' }
+  ] },
+  { key: 'grooming', label: 'ล้างหน้า/หวีผม/แปรงฟัน', type: 'select', options: [
+    { value: 0, label: '0 – ต้องมีคนช่วย' },
+    { value: 5, label: '5 – ทำเองได้ (เมื่อเตรียมอุปกรณ์ให้)' }
+  ] },
+  { key: 'transfer', label: 'ลุกนั่ง/เคลื่อนย้าย', type: 'select', options: [
+    { value: 0, label: '0 – นั่งเองไม่ได้ ต้องใช้คน 2 คนช่วยยก' },
+    { value: 5, label: '5 – ต้องช่วยอย่างมาก (คนแข็งแรง 1 คนพยุง)' },
+    { value: 10, label: '10 – ต้องช่วยบ้าง (พยุง/บอกวิธี)' },
+    { value: 15, label: '15 – ทำได้เอง' }
+  ] },
+  { key: 'toilet_use', label: 'ใช้ห้องน้ำ', type: 'select', options: [
+    { value: 0, label: '0 – ช่วยตัวเองไม่ได้' },
+    { value: 5, label: '5 – ทำได้บ้าง แต่ต้องช่วยบางส่วน' },
+    { value: 10, label: '10 – เข้าออก/ทำความสะอาดเองได้ดี' }
+  ] },
+  { key: 'mobility', label: 'เดิน/เคลื่อนที่', type: 'select', options: [
+    { value: 0, label: '0 – เคลื่อนที่ไม่ได้' },
+    { value: 5, label: '5 – ใช้รถเข็นช่วยตัวเองได้ (ไม่ต้องมีคนเข็น)' },
+    { value: 10, label: '10 – เดินได้โดยมีคนช่วยพยุง' },
+    { value: 15, label: '15 – เดินได้เอง (ใช้เครื่องช่วยเดินได้)' }
+  ] },
+  { key: 'dressing', label: 'แต่งตัว', type: 'select', options: [
+    { value: 0, label: '0 – ต้องมีคนแต่งตัวให้' },
+    { value: 5, label: '5 – ช่วยตัวเองได้ประมาณครึ่งหนึ่ง' },
+    { value: 10, label: '10 – แต่งตัวเองได้ดี (กระดุม/ซิป/รองเท้า)' }
+  ] },
+  { key: 'stairs', label: 'ขึ้นลงบันได', type: 'select', options: [
+    { value: 0, label: '0 – ทำไม่ได้' },
+    { value: 5, label: '5 – ต้องมีคนช่วย' },
+    { value: 10, label: '10 – ขึ้นลงเองได้ (ใช้เครื่องช่วยเดินได้)' }
+  ] },
+  { key: 'bathing', label: 'อาบน้ำ', type: 'select', options: [
+    { value: 0, label: '0 – ต้องมีคนช่วย' },
+    { value: 5, label: '5 – อาบน้ำเองได้' }
+  ] },
+  { key: 'bowels', label: 'กลั้นอุจจาระ', type: 'select', options: [
+    { value: 0, label: '0 – กลั้นไม่ได้ หรือต้องสวนอุจจาระประจำ' },
+    { value: 5, label: '5 – กลั้นไม่ได้เป็นบางครั้ง (นาน ๆ ครั้ง)' },
+    { value: 10, label: '10 – กลั้นได้ตามปกติ' }
+  ] },
+  { key: 'bladder', label: 'กลั้นปัสสาวะ', type: 'select', options: [
+    { value: 0, label: '0 – กลั้นไม่ได้ หรือคาสายสวนแต่ดูแลเองไม่ได้' },
+    { value: 5, label: '5 – กลั้นไม่ได้เป็นบางครั้ง (นาน ๆ ครั้ง)' },
+    { value: 10, label: '10 – กลั้นได้ตามปกติ' }
+  ] },
   { key: 'adl_note', label: 'หมายเหตุ', type: 'textarea' }
 ];
 
