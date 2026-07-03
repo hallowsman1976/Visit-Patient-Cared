@@ -33,11 +33,23 @@ export async function render(app) {
   const users = usersRes.success ? (usersRes.data || []) : [];
   const patients = patientsRes.success ? (patientsRes.data || []) : [];
 
+  const initial = (session.displayName || 'A').trim().charAt(0);
+
   app.innerHTML = `
     <div class="container container-wide">
       <div class="admin-layout">
         <nav class="admin-sidebar" id="adminNav">
-          ${MENU.map(m => `<div class="nav-item${m.key === activeSection ? ' active' : ''}" data-section="${m.key}"><span class="ic">${m.icon}</span>${m.label}</div>`).join('')}
+          <div class="admin-sidebar-head">
+            <div class="avatar">${escapeHtml(initial)}</div>
+            <div class="who">
+              <div class="who-name">${escapeHtml(session.displayName || 'ผู้ดูแลระบบ')}</div>
+              <div class="who-role">${escapeHtml(ROLE_LABELS[session.roleCode] || session.roleCode)}</div>
+            </div>
+          </div>
+          <div class="admin-sidebar-label">เมนูผู้ดูแลระบบ</div>
+          <div class="admin-sidebar-items">
+            ${MENU.map(m => `<div class="nav-item${m.key === activeSection ? ' active' : ''}" data-section="${m.key}"><span class="ic">${m.icon}</span><span class="lbl">${m.label}</span></div>`).join('')}
+          </div>
         </nav>
         <div class="admin-content" id="adminContent">
           <div class="admin-section" data-section="settings" ${activeSection !== 'settings' ? 'hidden' : ''}>
