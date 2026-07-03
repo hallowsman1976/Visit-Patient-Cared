@@ -6,6 +6,16 @@ import { DEMO_MODE } from '../api.js';
 
 const ROLE_LABELS = { ADMIN: 'ผู้ดูแลระบบ', STAFF: 'เจ้าหน้าที่บันทึก/เยี่ยมบ้าน', VIEWER: 'ผู้ดูข้อมูล/ผู้บริหาร' };
 
+const MENU = [
+  { key: 'settings', icon: '⚙️', label: 'ตั้งค่าระบบ' },
+  { key: 'users', icon: '👥', label: 'จัดการผู้ใช้งาน' },
+  { key: 'assign', icon: '🗂️', label: 'มอบหมายผู้ป่วย' },
+  { key: 'audit', icon: '📜', label: 'Audit Log' },
+  ...(DEMO_MODE ? [{ key: 'demo', icon: '🧪', label: 'โหมดสาธิต' }] : [])
+];
+
+let activeSection = MENU[0].key;
+
 export async function render(app) {
   const session = getSession();
   if (session.roleCode !== 'ADMIN') {
@@ -24,33 +34,59 @@ export async function render(app) {
   const patients = patientsRes.success ? (patientsRes.data || []) : [];
 
   app.innerHTML = `
-    <div class="container">
-      <div class="card">
-        <h2>ตั้งค่าระบบ</h2>
-        ${Object.entries(settingsRes.data || {}).map(([k, v]) => `<div style="font-size:13px;display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);"><span>${k}</span><span style="color:var(--gray-500);">${escapeHtml(String(v))}</span></div>`).join('')}
-      </div>
+    <div class="container container-wide">
+      <div class="admin-layout">
+        <nav class="admin-sidebar" id="adminNav">
+          ${MENU.map(m => `<div class="nav-item${m.key === activeSection ? ' active' : ''}" data-section="${m.key}"><span class="ic">${m.icon}</span>${m.label}</div>`).join('')}
+        </nav>
+        <div class="admin-content" id="adminContent">
+          <div class="admin-section" data-section="settings" ${activeSection !== 'settings' ? 'hidden' : ''}>
+            <div class="card">
+              <h2>ตั้งค่าระบบ</h2>
+              ${Object.entries(settingsRes.data || {}).map(([k, v]) => `<div style="font-size:13px;display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);"><span>${k}</span><span style="color:var(--gray-500);">${escapeHtml(String(v))}</span></div>`).join('')}
+            </div>
+          </div>
 
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <h2 style="margin:0;">จัดการผู้ใช้งาน</h2>
-          <button class="btn btn-secondary" style="width:auto;" id="btnAddUser">＋ เพิ่มผู้ใช้งาน</button>
+          <div class="admin-section" data-section="users" ${activeSection !== 'users' ? 'hidden' : ''}>
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h2 style="margin:0;">จัดการผู้ใช้งาน</h2>
+                <button class="btn btn-secondary" style="width:auto;" id="btnAddUser">＋ เพิ่มผู้ใช้งาน</button>
+              </div>
+              ${users.length ? users.map(u => userRow(u)).join('') : '<div class="empty-state">ยังไม่มีผู้ใช้งาน</div>'}
+            </div>
+          </div>
+
+          <div class="admin-section" data-section="assign" ${activeSection !== 'assign' ? 'hidden' : ''}>
+            <div class="card">
+              <h2>มอบหมายผู้ป่วยให้เจ้าหน้าที่</h2>
+              ${patients.length ? patients.map(p => assignRow(p, users)).join('') : '<div class="empty-state">ยังไม่มีผู้ป่วยในระบบ</div>'}
+            </div>
+          </div>
+
+          <div class="admin-section" data-section="audit" ${activeSection !== 'audit' ? 'hidden' : ''}>
+            <div class="card">
+              <h2>Audit Log (ล่าสุด 50 รายการ)</h2>
+              ${(auditRes.data || []).length ? auditRes.data.map(l => `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--gray-100);">${formatThaiDate(l.timestamp)} · ${escapeHtml(l.action)} · ${escapeHtml(l.sheet_name || '')} · ${escapeHtml(l.detail || '')}</div>`).join('') : '<div class="empty-state">ยังไม่มี log</div>'}
+            </div>
+          </div>
+
+          ${DEMO_MODE ? `
+          <div class="admin-section" data-section="demo" ${activeSection !== 'demo' ? 'hidden' : ''}>
+            <div class="card"><h2>โหมดสาธิต</h2><button class="btn btn-danger" id="btnReset">รีเซ็ตข้อมูลตัวอย่างทั้งหมด</button></div>
+          </div>` : ''}
         </div>
-        ${users.length ? users.map(u => userRow(u)).join('') : '<div class="empty-state">ยังไม่มีผู้ใช้งาน</div>'}
       </div>
-
-      <div class="card">
-        <h2>มอบหมายผู้ป่วยให้เจ้าหน้าที่</h2>
-        ${patients.length ? patients.map(p => assignRow(p, users)).join('') : '<div class="empty-state">ยังไม่มีผู้ป่วยในระบบ</div>'}
-      </div>
-
-      <div class="card">
-        <h2>Audit Log (ล่าสุด 50 รายการ)</h2>
-        ${(auditRes.data || []).length ? auditRes.data.map(l => `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--gray-100);">${formatThaiDate(l.timestamp)} · ${escapeHtml(l.action)} · ${escapeHtml(l.sheet_name || '')} · ${escapeHtml(l.detail || '')}</div>`).join('') : '<div class="empty-state">ยังไม่มี log</div>'}
-      </div>
-
-      ${DEMO_MODE ? `<div class="card"><h2>โหมดสาธิต</h2><button class="btn btn-danger" id="btnReset">รีเซ็ตข้อมูลตัวอย่างทั้งหมด</button></div>` : ''}
     </div>
   `;
+
+  app.querySelectorAll('.admin-sidebar .nav-item').forEach(item => {
+    item.onclick = () => {
+      activeSection = item.dataset.section;
+      app.querySelectorAll('.admin-sidebar .nav-item').forEach(n => n.classList.toggle('active', n === item));
+      app.querySelectorAll('.admin-content .admin-section').forEach(sec => { sec.hidden = sec.dataset.section !== activeSection; });
+    };
+  });
 
   const resetBtn = app.querySelector('#btnReset');
   if (resetBtn) resetBtn.onclick = () => { resetDemoData(); toast('รีเซ็ตข้อมูลแล้ว'); location.reload(); };
