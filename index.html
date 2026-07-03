@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>ระบบเยี่ยมบ้าน INHOMESS</title>
+<link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1 id="appName">ระบบเยี่ยมบ้าน INHOMESS</h1>
+      <div class="sub" id="appSub"></div>
+    </div>
+    <button class="icon-btn" id="btnLogout" title="ออกจากระบบ">⏻</button>
+  </header>
+
+  <main id="app"></main>
+
+  <nav class="bottom-nav" id="bottomNav">
+    <a href="#/dashboard" data-path="/dashboard"><span class="ic">🏠</span>หน้าหลัก</a>
+    <a href="#/patients" data-path="/patients"><span class="ic">🔍</span>ค้นหา</a>
+    <a href="#/visits" data-path="/visits"><span class="ic">📋</span>ประวัติ</a>
+    <a href="#/admin" data-path="/admin"><span class="ic">⚙️</span>ตั้งค่า</a>
+  </nav>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
