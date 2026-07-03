@@ -9,7 +9,7 @@ function nowIso() { return new Date().toISOString(); }
 
 function seedDb() {
   const patients = [
-    { patient_uid: uid('pt'), hn: 'HN0001', cid: '1100000000011', cid_masked: '1-XXXX-XXXXX-XX-1', first_name: 'สมชาย', last_name: 'ใจดี', sex: 'male', dependency_level: 'social', age_year: 51, active_status: 'active', consent_status: 'ยินยอม', main_diagnosis: 'ความดันโลหิตสูง', responsible_staff: 'พยาบาลสมศรี' },
+    { patient_uid: uid('pt'), hn: 'HN0001', cid: '1100000000011', cid_masked: '1-XXXX-XXXXX-XX-1', first_name: 'สมชาย', last_name: 'ใจดี', sex: 'male', dependency_level: 'social', age_year: 51, active_status: 'active', consent_status: 'ยินยอม', main_diagnosis: 'ความดันโลหิตสูง' },
     { patient_uid: uid('pt'), hn: 'HN0002', cid: '1100000000029', cid_masked: '1-XXXX-XXXXX-XX-9', first_name: 'สมหญิง', last_name: 'รักสงบ', sex: 'female', dependency_level: 'home', age_year: 68, active_status: 'active', consent_status: 'ยินยอม', main_diagnosis: 'เบาหวาน' },
     { patient_uid: uid('pt'), hn: 'HN0003', cid: '1100000000037', cid_masked: '1-XXXX-XXXXX-XX-7', first_name: 'สมศักดิ์', last_name: 'มั่นคง', sex: 'male', dependency_level: 'bed', age_year: 85, active_status: 'active', consent_status: 'ยินยอม', main_diagnosis: 'อัมพาตครึ่งซีก' }
   ];
@@ -52,9 +52,9 @@ function seedDb() {
 
   return {
     users: [
-      { user_uid: 'u_admin', username: 'admin', password: 'admin123', display_name: 'ผู้ดูแลระบบ (สาธิต)', role_code: 'ADMIN' },
-      { user_uid: 'u_staff', username: 'staff', password: 'staff123', display_name: 'เจ้าหน้าที่เยี่ยมบ้าน (สาธิต)', role_code: 'STAFF' },
-      { user_uid: 'u_viewer', username: 'viewer', password: 'viewer123', display_name: 'ผู้บริหาร (สาธิต)', role_code: 'VIEWER' }
+      { user_uid: 'u_admin', username: 'admin', password: 'admin123', display_name: 'ผู้ดูแลระบบ (สาธิต)', role_code: 'ADMIN', email: '', phone: '', unit_name: '', is_active: true, created_at: nowIso() },
+      { user_uid: 'u_staff', username: 'staff', password: 'staff123', display_name: 'เจ้าหน้าที่เยี่ยมบ้าน (สาธิต)', role_code: 'STAFF', email: '', phone: '', unit_name: '', is_active: true, created_at: nowIso() },
+      { user_uid: 'u_viewer', username: 'viewer', password: 'viewer123', display_name: 'ผู้บริหาร (สาธิต)', role_code: 'VIEWER', email: '', phone: '', unit_name: '', is_active: true, created_at: nowIso() }
     ],
     patients, households, caregivers,
     visits: [visit1, visit3], adl, inhomess, referrals, problems, plans,
@@ -335,6 +335,46 @@ export async function mockCall(action, payload, session) {
       }
 
       case 'getAuditLogs': return delay(envelope(true, db.auditLogs.slice(0, 200)));
+
+      case 'listUsers': {
+        return delay(envelope(true, db.users.map(u => ({
+          user_uid: u.user_uid, username: u.username, display_name: u.display_name,
+          email: u.email || '', phone: u.phone || '', role_code: u.role_code,
+          unit_name: u.unit_name || '', is_active: u.is_active !== false,
+          last_login_at: u.last_login_at || '', created_at: u.created_at || ''
+        }))));
+      }
+
+      case 'createUser': {
+        if (db.users.find(u => u.username === payload.username)) return delay(envelope(false, null, 'มีชื่อผู้ใช้นี้อยู่แล้ว'));
+        const u = Object.assign({ user_uid: uid('usr'), is_active: true, created_at: nowIso() }, payload);
+        db.users.push(u); saveDb(db);
+        return delay(envelope(true, { user_uid: u.user_uid }));
+      }
+
+      case 'updateUser': {
+        const u = db.users.find(x => x.user_uid === payload.user_uid);
+        if (!u) return delay(envelope(false, null, 'ไม่พบผู้ใช้งาน'));
+        Object.assign(u, payload);
+        saveDb(db);
+        return delay(envelope(true, { user_uid: u.user_uid }));
+      }
+
+      case 'listPatientsBrief': {
+        return delay(envelope(true, db.patients.map(p => ({
+          patient_uid: p.patient_uid, hn: p.hn, first_name: p.first_name, last_name: p.last_name,
+          active_status: p.active_status, responsible_staff: p.responsible_staff || '',
+          responsible_staff_name: (db.users.find(u => u.user_uid === p.responsible_staff) || {}).display_name || ''
+        }))));
+      }
+
+      case 'assignPatientStaff': {
+        const p = db.patients.find(x => x.patient_uid === payload.patient_uid);
+        if (!p) return delay(envelope(false, null, 'ไม่พบผู้ป่วย'));
+        p.responsible_staff = payload.user_uid || '';
+        saveDb(db);
+        return delay(envelope(true, { patient_uid: p.patient_uid, responsible_staff: p.responsible_staff }));
+      }
 
       default: return delay(envelope(false, null, 'ไม่รู้จักคำสั่ง (demo): ' + action));
     }
