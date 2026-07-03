@@ -2,6 +2,7 @@ import { call } from '../api.js';
 import { navigate } from '../router.js';
 import { toast, debounce, escapeHtml } from '../utils.js';
 import { getSession } from '../state.js';
+import { initThaiDatePicker } from '../thaiDatePicker.js';
 
 let mode = 'hn';
 
@@ -83,7 +84,8 @@ function openCreateModal(app) {
   wrap.className = 'card';
   wrap.style.cssText = 'position:fixed;inset:14px;top:auto;bottom:74px;max-height:80vh;overflow:auto;z-index:50;';
   wrap.innerHTML = `
-    <h2>เพิ่มผู้ป่วยใหม่</h2>
+    <button type="button" class="modal-close" id="btnClose" aria-label="ปิด">✕</button>
+    <h2 style="padding-right:34px;">เพิ่มผู้ป่วยใหม่</h2>
     <form id="newPatientForm">
       <div class="two-col">
         <div class="field"><label>HN *</label><input name="hn" required /></div>
@@ -95,7 +97,7 @@ function openCreateModal(app) {
       </div>
       <div class="two-col">
         <div class="field"><label>เพศ</label><select name="sex"><option value="male">ชาย</option><option value="female">หญิง</option></select></div>
-        <div class="field"><label>วันเกิด (ค.ศ.)</label><input name="birth_date" type="date" /></div>
+        <div class="field" id="birthDateField"></div>
       </div>
       <div class="field"><label>ระดับการพึ่งพา</label>
         <select name="dependency_level">
@@ -110,6 +112,8 @@ function openCreateModal(app) {
     </form>
   `;
   document.body.appendChild(wrap);
+  initThaiDatePicker(wrap.querySelector('#birthDateField'), { name: 'birth_date', label: 'วันเกิด (พ.ศ.)' });
+  wrap.querySelector('#btnClose').onclick = () => wrap.remove();
   wrap.querySelector('#btnCancel').onclick = () => wrap.remove();
   wrap.querySelector('#newPatientForm').addEventListener('submit', async (e) => {
     e.preventDefault();
