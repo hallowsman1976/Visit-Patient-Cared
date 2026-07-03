@@ -49,6 +49,60 @@ button { font-family: inherit; }
 }
 
 .container { max-width: 720px; margin: 0 auto; padding: 14px; }
+.container.container-wide { max-width: 960px; }
+
+.admin-layout { display: flex; gap: 14px; align-items: flex-start; }
+.admin-sidebar {
+  flex: 0 0 210px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 10px; position: sticky; top: 70px; overflow: hidden;
+}
+.admin-sidebar-head {
+  display: flex; align-items: center; gap: 10px; padding: 12px;
+  border-radius: 12px; margin-bottom: 10px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff;
+}
+.admin-sidebar-head .avatar {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 700;
+}
+.admin-sidebar-head .who { min-width: 0; }
+.admin-sidebar-head .who-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-sidebar-head .who-role { font-size: 11px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-sidebar-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--gray-500); padding: 2px 12px 8px;
+}
+.admin-sidebar-items { display: flex; flex-direction: column; }
+.admin-sidebar .nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px;
+  font-size: 13px; color: var(--gray-700); cursor: pointer; margin-bottom: 2px; font-weight: 500;
+  transition: background .15s, color .15s;
+}
+.admin-sidebar .nav-item .ic {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+  background: var(--gray-100); transition: background .15s;
+}
+.admin-sidebar .nav-item .lbl { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-sidebar .nav-item:hover { background: #eef4fc; color: var(--blue-dark); }
+.admin-sidebar .nav-item.active {
+  background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff;
+  box-shadow: 0 3px 8px rgba(43,127,214,.32);
+}
+.admin-sidebar .nav-item.active .ic { background: rgba(255,255,255,.22); }
+.admin-content { flex: 1; min-width: 0; }
+@media (max-width: 680px) {
+  .admin-layout { flex-direction: column; }
+  .admin-sidebar {
+    display: flex; flex-direction: column; position: static; width: 100%; padding: 10px;
+  }
+  .admin-sidebar-label { display: none; }
+  .admin-sidebar-items {
+    flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 2px;
+  }
+  .admin-sidebar .nav-item { flex: 0 0 auto; white-space: nowrap; margin-bottom: 0; }
+}
 
 .card {
   background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
