@@ -73,3 +73,54 @@ export function escapeHtml(str) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 }
+
+// ---------- Overlay / popup ระหว่างทำงาน (ใช้ร่วมกันทั้งแอป) ----------
+// แสดงฉากมืดพร้อม spinner ระหว่างรอผลจาก backend
+export function showOverlay(message = 'กำลังทำงาน...') {
+  hideOverlay();
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.id = 'appOverlay';
+  ov.innerHTML = `<div class="overlay-box"><div class="spinner"></div><div class="overlay-msg">${escapeHtml(message)}</div></div>`;
+  document.body.appendChild(ov);
+  return ov;
+}
+
+export function hideOverlay() {
+  const ov = document.getElementById('appOverlay');
+  if (ov) ov.remove();
+}
+
+// popup เครื่องหมายถูกแบบ animation แล้วปิดเอง (คืน Promise เมื่อปิด)
+export function successPopup(message = 'สำเร็จ', ms = 1100) {
+  return new Promise((resolve) => {
+    const pop = document.createElement('div');
+    pop.className = 'overlay';
+    pop.innerHTML = `<div class="overlay-box success-pop">
+      <div class="success-check"><svg viewBox="0 0 52 52"><circle class="sc-circle" cx="26" cy="26" r="24"/><path class="sc-check" d="M14 27l8 8 16-16"/></svg></div>
+      <div class="overlay-msg">${escapeHtml(message)}</div>
+    </div>`;
+    document.body.appendChild(pop);
+    setTimeout(() => { pop.remove(); resolve(); }, ms);
+  });
+}
+
+// กล่องยืนยัน (แทน confirm ของเบราว์เซอร์) คืน Promise<boolean>
+export function confirmDialog(message, { okText = 'ยืนยัน', cancelText = 'ยกเลิก', danger = false } = {}) {
+  return new Promise((resolve) => {
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML = `<div class="overlay-box confirm-box">
+      <div class="confirm-msg">${escapeHtml(message)}</div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" data-act="cancel">${escapeHtml(cancelText)}</button>
+        <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-act="ok">${escapeHtml(okText)}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    const done = (val) => { ov.remove(); resolve(val); };
+    ov.querySelector('[data-act=cancel]').onclick = () => done(false);
+    ov.querySelector('[data-act=ok]').onclick = () => done(true);
+    ov.addEventListener('click', (e) => { if (e.target === ov) done(false); });
+  });
+}

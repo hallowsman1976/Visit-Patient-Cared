@@ -1,6 +1,6 @@
 import { call } from '../api.js';
 import { getSession } from '../state.js';
-import { formatThaiDate, escapeHtml, toast } from '../utils.js';
+import { formatThaiDate, escapeHtml, toast, showOverlay, hideOverlay, successPopup, confirmDialog } from '../utils.js';
 import { resetDemoData } from '../mockData.js';
 import { DEMO_MODE } from '../api.js';
 
@@ -65,7 +65,7 @@ export async function render(app) {
                 <h2 style="margin:0;">จัดการผู้ใช้งาน</h2>
                 <button class="btn btn-secondary" style="width:auto;" id="btnAddUser">＋ เพิ่มผู้ใช้งาน</button>
               </div>
-              ${users.length ? users.map(u => userRow(u)).join('') : '<div class="empty-state">ยังไม่มีผู้ใช้งาน</div>'}
+              ${users.length ? users.map(u => userRow(u, session.userUid)).join('') : '<div class="empty-state">ยังไม่มีผู้ใช้งาน</div>'}
             </div>
           </div>
 
@@ -107,26 +107,45 @@ export async function render(app) {
   app.querySelectorAll('.user-row .btn-edit-user').forEach(btn => {
     btn.onclick = () => openUserModal(app, users.find(u => u.user_uid === btn.dataset.uid));
   });
+  app.querySelectorAll('.user-row .btn-del-user').forEach(btn => {
+    btn.onclick = async () => {
+      const u = users.find(x => x.user_uid === btn.dataset.uid);
+      const ok = await confirmDialog(`ต้องการลบผู้ใช้งาน "${u.display_name}" (${u.username}) ใช่หรือไม่?\nการลบไม่สามารถย้อนกลับได้`, { okText: 'ลบ', danger: true });
+      if (!ok) return;
+      showOverlay('กำลังลบ...');
+      const res = await call('deleteUser', { user_uid: u.user_uid });
+      hideOverlay();
+      if (!res.success) { toast(res.message); return; }
+      await successPopup('ลบผู้ใช้งานแล้ว');
+      render(app);
+    };
+  });
   app.querySelectorAll('.assign-select').forEach(sel => {
     sel.onchange = async () => {
+      showOverlay('กำลังบันทึกการมอบหมาย...');
       const res = await call('assignPatientStaff', { patient_uid: sel.dataset.uid, user_uid: sel.value });
+      hideOverlay();
       if (!res.success) { toast(res.message); return; }
-      toast('มอบหมายผู้รับผิดชอบแล้ว');
+      await successPopup('มอบหมายผู้รับผิดชอบแล้ว');
       render(app);
     };
   });
 }
 
-function userRow(u) {
+function userRow(u, currentUserUid) {
   const active = u.is_active !== false;
+  const isSelf = u.user_uid === currentUserUid;
   return `
     <div class="list-item user-row" style="cursor:default;">
       <div>
-        <div class="name">${escapeHtml(u.display_name)} <span class="badge gray">${escapeHtml(u.username)}</span></div>
-        <div class="meta">${escapeHtml(ROLE_LABELS[u.role_code] || u.role_code)}${u.unit_name ? ' · ' + escapeHtml(u.unit_name) : ''}</div>
+        <div class="name">${escapeHtml(u.display_name)} <span class="badge gray">${escapeHtml(u.username)}</span>${isSelf ? ' <span class="badge blue">คุณ</span>' : ''}</div>
+        <div class="meta">${escapeHtml(ROLE_LABELS[u.role_code] || u.role_code)}${u.unit_name ? ' · ' + escapeHtml(u.unit_name) : ''}${u.phone ? ' · ☎ ' + escapeHtml(u.phone) : ''}</div>
         <div class="meta">${active ? '<span class="badge green">ใช้งานอยู่</span>' : '<span class="badge red">ปิดใช้งาน</span>'}</div>
       </div>
-      <button type="button" class="btn btn-secondary btn-edit-user" style="width:auto;" data-uid="${u.user_uid}">แก้ไข</button>
+      <div style="display:flex;gap:6px;flex:0 0 auto;">
+        <button type="button" class="btn btn-secondary btn-edit-user" style="width:auto;" data-uid="${u.user_uid}">แก้ไข</button>
+        ${isSelf ? '' : `<button type="button" class="btn btn-danger btn-del-user" style="width:auto;" data-uid="${u.user_uid}">ลบ</button>`}
+      </div>
     </div>
   `;
 }
@@ -162,7 +181,7 @@ function openUserModal(app, user) {
       </div>
       <div class="two-col">
         <div class="field"><label>อีเมล</label><input name="email" type="email" value="${isEdit ? escapeHtml(user.email || '') : ''}" /></div>
-        <div class="field"><label>เบอร์โทร</label><input name="phone" value="${isEdit ? escapeHtml(user.phone || '') : ''}" /></div>
+        <div class="field"><label>เบอร์โทร</label><input name="phone" type="text" inputmode="tel" maxlength="15" pattern="[0-9+\\-() ]*" placeholder="เช่น 0812345678" value="${isEdit ? escapeHtml(user.phone || '') : ''}" /></div>
       </div>
       <div class="two-col">
         <div class="field"><label>สิทธิ์ *</label>
@@ -189,11 +208,14 @@ function openUserModal(app, user) {
     const data = Object.fromEntries(fd);
     data.is_active = isEdit ? fd.has('is_active') : true;
     if (!data.password) delete data.password;
+    if (data.phone) data.phone = String(data.phone).trim();
     if (isEdit) data.user_uid = user.user_uid;
+    showOverlay(isEdit ? 'กำลังบันทึกการแก้ไข...' : 'กำลังบันทึก...');
     const res = await call(isEdit ? 'updateUser' : 'createUser', data);
+    hideOverlay();
     if (!res.success) { toast(res.message); return; }
-    toast(isEdit ? 'บันทึกการแก้ไขแล้ว' : 'เพิ่มผู้ใช้งานแล้ว');
     wrap.remove();
+    await successPopup(isEdit ? 'บันทึกการแก้ไขแล้ว' : 'เพิ่มผู้ใช้งานแล้ว');
     render(app);
   });
 }

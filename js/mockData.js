@@ -360,6 +360,22 @@ export async function mockCall(action, payload, session) {
         return delay(envelope(true, { user_uid: u.user_uid }));
       }
 
+      case 'deleteUser': {
+        const idx = db.users.findIndex(x => x.user_uid === payload.user_uid);
+        if (idx === -1) return delay(envelope(false, null, 'ไม่พบผู้ใช้งาน'));
+        if (session && payload.user_uid === session.userUid) return delay(envelope(false, null, 'ไม่สามารถลบบัญชีของตนเองได้'));
+        const target = db.users[idx];
+        if (target.role_code === 'ADMIN') {
+          const otherActiveAdmins = db.users.filter(x => x.role_code === 'ADMIN' && x.user_uid !== payload.user_uid && x.is_active !== false);
+          if (!otherActiveAdmins.length) return delay(envelope(false, null, 'ต้องมีผู้ดูแลระบบ (ADMIN) ที่ใช้งานอยู่อย่างน้อย 1 คน'));
+        }
+        // ยกเลิกการมอบหมายผู้ป่วยที่ผูกกับผู้ใช้นี้
+        db.patients.forEach(p => { if (p.responsible_staff === payload.user_uid) p.responsible_staff = ''; });
+        db.users.splice(idx, 1);
+        saveDb(db);
+        return delay(envelope(true, { user_uid: payload.user_uid }));
+      }
+
       case 'listPatientsBrief': {
         return delay(envelope(true, db.patients.map(p => ({
           patient_uid: p.patient_uid, hn: p.hn, first_name: p.first_name, last_name: p.last_name,
