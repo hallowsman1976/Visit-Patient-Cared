@@ -108,7 +108,9 @@ export const INHOMESS_STEPS = [
     code: 'O', title: 'O: Other People', subtitle: 'ครอบครัว ผู้ดูแล เครือข่ายสังคม',
     fields: [
       { key: 'main_caregiver_name', label: 'ผู้ดูแลหลัก', type: 'text' },
-      { key: 'caregiver_relationship', label: 'ความสัมพันธ์', type: 'text' },
+      { key: 'caregiver_relationship', label: 'ความสัมพันธ์', type: 'select', options: [
+        'บิดา', 'มารดา', 'ปู่/ตา', 'ย่า/ยาย', 'ลุง/อา (ชาย)', 'ป้า/น้า/อา (หญิง)', 'ลูกพี่ลูกน้อง/ญาติ', 'บุตร', 'เพื่อนบ้าน'
+      ] },
       { key: 'caregiver_support_level', label: 'ระดับการสนับสนุนของผู้ดูแล', type: 'select', options: ['ดี', 'ปานกลาง', 'น้อย'] },
       { key: 'family_conflict', label: 'มีความขัดแย้งในครอบครัว', type: 'boolean' },
       { key: 'social_support', label: 'เครือข่ายสนับสนุน', type: 'select', options: ['อสม.', 'ชุมชน', 'ญาติ', 'อบต.', 'อื่น ๆ'] },

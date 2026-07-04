@@ -16,9 +16,13 @@ const STEPS = [
 let ctx = null; // { patientUid, visitUid, stepIndex, lookups, visitData }
 
 export async function render(app, params) {
-  ctx = { patientUid: params.patient_uid, visitUid: params.visit_uid || null, stepIndex: 0, lookups: {}, visitData: null };
-  const lookupsRes = await call('getLookups', {});
+  ctx = { patientUid: params.patient_uid, visitUid: params.visit_uid || null, stepIndex: 0, lookups: {}, visitData: null, drugs: [] };
+  const [lookupsRes, drugsRes] = await Promise.all([
+    call('getLookups', {}),
+    call('getDrugList', {})
+  ]);
   ctx.lookups = lookupsRes.data || {};
+  ctx.drugs = (drugsRes && drugsRes.success && Array.isArray(drugsRes.data)) ? drugsRes.data : [];
 
   if (ctx.visitUid) {
     const res = await call('getHomeVisit', { visit_uid: ctx.visitUid });
@@ -163,9 +167,123 @@ function renderDomainStep(body, domain) {
       </form>
     </div>
   `;
+  if (domain.code === 'N') setupBmiLiveCalc(body);
+  if (domain.code === 'M') setupMedicationPicker(body);
   bindGenericForm(body, '#domainForm', async (data) => {
     return call('saveINHOMESS', { domain: domain.code, visit_uid: ctx.visitUid, patient_uid: ctx.patientUid, fields: data });
   });
+}
+
+// N: คำนวณ BMI สดจากน้ำหนัก/ส่วนสูง พร้อมแปลผลภาวะโภชนาการ (เกณฑ์เดียวกับ backend interpretBmi_)
+function calcBmi(weightKg, heightCm) {
+  const w = Number(weightKg), h = Number(heightCm);
+  if (!w || !h) return null;
+  const m = h / 100;
+  return Math.round((w / (m * m)) * 10) / 10;
+}
+
+function interpretBmi(bmi) {
+  if (bmi == null) return null;
+  if (bmi < 18.5) return { text: 'ผอม / น้ำหนักน้อย', color: 'orange' };
+  if (bmi < 23) return { text: 'ปกติ (สมส่วน)', color: 'green' };
+  if (bmi < 25) return { text: 'น้ำหนักเกิน', color: 'orange' };
+  if (bmi < 30) return { text: 'อ้วนระดับ 1', color: 'red' };
+  return { text: 'อ้วนระดับ 2', color: 'red' };
+}
+
+function setupBmiLiveCalc(body) {
+  const form = body.querySelector('#domainForm');
+  const w = form.querySelector('[name=weight_kg]');
+  const h = form.querySelector('[name=height_cm]');
+  if (!w || !h) return;
+  const disp = document.createElement('div');
+  disp.className = 'bmi-result';
+  h.closest('.field').insertAdjacentElement('afterend', disp);
+  const update = () => {
+    const bmi = calcBmi(w.value, h.value);
+    if (bmi == null) {
+      disp.innerHTML = `<span class="bmi-empty">กรอกน้ำหนักและส่วนสูงเพื่อคำนวณ BMI อัตโนมัติ</span>`;
+      return;
+    }
+    const interp = interpretBmi(bmi);
+    disp.innerHTML = `<div class="bmi-value">BMI = <b>${bmi}</b> กก./ม.²</div><span class="badge ${interp.color}">${interp.text}</span>`;
+  };
+  w.addEventListener('input', update);
+  h.addEventListener('input', update);
+  update();
+}
+
+// M: ตัวเลือกยาแบบค้นหา (Select2-style) จากคลังยา (ชีต Drug) + ปุ่มเพิ่มยา
+function setupMedicationPicker(body) {
+  const form = body.querySelector('#domainForm');
+  const medField = form.querySelector('[name=current_medications]');
+  const countField = form.querySelector('[name=medications_count]');
+  if (!medField) return;
+
+  let meds = String(medField.value || '').split('\n').map(s => s.trim()).filter(Boolean);
+  medField.readOnly = true;
+  const medLabel = medField.closest('.field').querySelector('label');
+  if (medLabel) medLabel.textContent = 'รายการยาปัจจุบัน (เพิ่มจากช่องค้นหาด้านบน)';
+  if (countField) countField.readOnly = true;
+
+  const picker = document.createElement('div');
+  picker.className = 'med-picker field';
+  picker.innerHTML = `
+    <label>เพิ่มรายการยา (ค้นหาจากคลังยา)</label>
+    <div class="med-search-row">
+      <div class="med-combo">
+        <input type="text" id="drugSearch" placeholder="พิมพ์ชื่อยาเพื่อค้นหา หรือพิมพ์ชื่อยาที่ไม่มีในคลัง" autocomplete="off" />
+        <div class="med-options" id="drugOptions" hidden></div>
+      </div>
+      <button type="button" class="btn btn-secondary" id="btnAddMed" style="width:auto;">＋ เพิ่มยา</button>
+    </div>
+    <div class="med-chips" id="medChips"></div>
+    <div class="hint">${ctx.drugs.length ? 'คลังยามี ' + ctx.drugs.length + ' รายการ' : 'ยังไม่พบคลังยา (ชีต Drug) — พิมพ์ชื่อยาเพื่อเพิ่มได้'}</div>
+  `;
+  medField.closest('.field').insertAdjacentElement('beforebegin', picker);
+
+  const search = picker.querySelector('#drugSearch');
+  const optionsBox = picker.querySelector('#drugOptions');
+  const chips = picker.querySelector('#medChips');
+  const addBtn = picker.querySelector('#btnAddMed');
+
+  const syncSink = () => {
+    medField.value = meds.join('\n');
+    if (countField) countField.value = meds.length;
+  };
+  const renderChips = () => {
+    chips.innerHTML = meds.length
+      ? meds.map((m, i) => `<span class="med-chip">${escapeHtml(m)}<button type="button" data-i="${i}" aria-label="ลบ">✕</button></span>`).join('')
+      : '<span class="med-empty">ยังไม่มีรายการยา</span>';
+    chips.querySelectorAll('button[data-i]').forEach(b => {
+      b.onclick = () => { meds.splice(Number(b.dataset.i), 1); renderChips(); syncSink(); };
+    });
+  };
+  const addMed = (name) => {
+    name = String(name || '').trim();
+    if (!name) return;
+    if (meds.some(m => m.toLowerCase() === name.toLowerCase())) { toast('มียานี้ในรายการแล้ว'); return; }
+    meds.push(name); renderChips(); syncSink();
+    search.value = ''; optionsBox.hidden = true; search.focus();
+  };
+  const renderOptions = () => {
+    const q = search.value.trim().toLowerCase();
+    let list = ctx.drugs.filter(d => !meds.includes(d));
+    if (q) list = list.filter(d => String(d).toLowerCase().includes(q));
+    list = list.slice(0, 40);
+    if (!list.length) { optionsBox.hidden = true; return; }
+    optionsBox.innerHTML = list.map(d => `<div class="med-option" data-drug="${escapeHtml(d)}">${escapeHtml(d)}</div>`).join('');
+    optionsBox.hidden = false;
+    optionsBox.querySelectorAll('.med-option').forEach(o => { o.onclick = () => addMed(o.dataset.drug); });
+  };
+  search.addEventListener('input', renderOptions);
+  search.addEventListener('focus', renderOptions);
+  search.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addMed(search.value); } });
+  search.addEventListener('blur', () => setTimeout(() => { optionsBox.hidden = true; }, 150));
+  addBtn.onclick = () => addMed(search.value);
+
+  renderChips();
+  syncSink();
 }
 
 // ---------- Step 12: ปัญหา/แผนดูแล/ส่งต่อ/นัด ----------

@@ -139,6 +139,14 @@ export async function mockCall(action, payload, session) {
       case 'getSettings': return delay(envelope(true, { APP_NAME: 'ระบบเยี่ยมบ้าน INHOMESS (โหมดสาธิต)', ORG_NAME: 'โรงพยาบาลตัวอย่าง' }));
       case 'getLookups': return delay(envelope(true, payload.group ? { [payload.group]: LOOKUPS[payload.group] || [] } : LOOKUPS));
 
+      case 'getDrugList': return delay(envelope(true, [
+        'Paracetamol 500 mg', 'Amlodipine 5 mg', 'Metformin 500 mg', 'Simvastatin 20 mg',
+        'Enalapril 5 mg', 'Aspirin 81 mg', 'Omeprazole 20 mg', 'Losartan 50 mg',
+        'Hydrochlorothiazide 25 mg', 'Glipizide 5 mg', 'Atorvastatin 40 mg', 'Warfarin 3 mg',
+        'Furosemide 40 mg', 'Insulin RI', 'Salbutamol inhaler', 'Gabapentin 300 mg',
+        'Allopurinol 100 mg', 'Levothyroxine 50 mcg', 'Prednisolone 5 mg', 'Tramadol 50 mg'
+      ]));
+
       case 'searchPatient': {
         const hn = (payload.hn || '').trim(), cid = (payload.cid || '').trim(), name = (payload.name || '').trim().toLowerCase();
         const results = db.patients.filter(p => {

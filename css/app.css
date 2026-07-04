@@ -317,3 +317,42 @@ button { font-family: inherit; }
 .confirm-msg { font-size: 14px; color: var(--ink); text-align: center; line-height: 1.6; }
 .confirm-box .btn-row { display: flex; gap: 10px; }
 .confirm-box .btn-row .btn { flex: 1; width: auto; }
+
+/* ---------- BMI live result (หมวด N) ---------- */
+.bmi-result {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--gray-50); border: 1px dashed var(--gray-300); border-radius: 10px;
+  padding: 10px 12px; margin: -4px 0 12px;
+}
+.bmi-result .bmi-value { font-size: 14px; color: var(--gray-700); }
+.bmi-result .bmi-value b { font-size: 17px; color: var(--blue-dark); }
+.bmi-result .bmi-empty { font-size: 12px; color: var(--gray-500); }
+
+/* ---------- Medication picker (หมวด M) ---------- */
+.med-search-row { display: flex; gap: 8px; align-items: flex-start; }
+.med-combo { position: relative; flex: 1; min-width: 0; }
+.med-combo input {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--gray-300); border-radius: 10px;
+  font-size: 15px; font-family: inherit; background: #fff; color: var(--ink);
+}
+.med-options {
+  position: absolute; z-index: 70; top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff; border: 1px solid var(--gray-100); border-radius: 10px; box-shadow: var(--shadow);
+  max-height: 220px; overflow-y: auto;
+}
+.med-option { padding: 9px 12px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--gray-50); }
+.med-option:last-child { border-bottom: none; }
+.med-option:hover { background: #eef4fc; color: var(--blue-dark); }
+.med-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.med-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #e8f1fc; color: var(--blue-dark); border-radius: 999px;
+  padding: 5px 6px 5px 12px; font-size: 13px; font-weight: 500;
+}
+.med-chip button {
+  border: none; background: rgba(28,95,168,.15); color: var(--blue-dark);
+  width: 18px; height: 18px; border-radius: 50%; font-size: 11px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.med-chip button:active { background: rgba(28,95,168,.3); }
+.med-empty { font-size: 12px; color: var(--gray-500); }
